@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Y4 Science Interactive — Skeleton</title>
+  <style>
+    :root{--bg:#0f172a;--panel:#0b1220;--card:#111827;--muted:#9aa4b2;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--blue:#3b82f6}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;background:var(--bg);color:#e5e7eb}
+    header{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #1f2937;padding:16px;z-index:10}
+    h1{margin:0;font-size:20px}
+    .sub{color:var(--muted);font-size:13px}
+    .wrap{max-width:1200px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
+    @media(min-width:1000px){.wrap{grid-template-columns:1.35fr .65fr}}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:16px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+    .tab{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+    .tab.active{border-color:var(--ok);box-shadow:0 0 0 2px #14532d inset}
+    .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .col{display:flex;flex-direction:column;gap:8px}
+    button{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+    button.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#06210d}
+    button.warn{background:#1f1300;border:1px solid #6b4e00;color:#ffd166}
+    input,select,textarea{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px}
+    textarea{min-height:90px}
+    .result{margin-top:10px;padding:10px;border-radius:10px;background:var(--panel);border:1px solid #1f2937}
+    .ok{color:var(--ok)} .err{color:var(--err)} .muted{color:var(--muted)}
+    .grid{display:grid;gap:12px}
+    .slot{border:2px dashed #334155;border-radius:12px;min-height:52px;padding:8px}
+    .chip{padding:10px 12px;border:1px solid #2a3646;border-radius:999px;background:#0b1220;display:inline-block;cursor:grab;margin:4px}
+    .pill{padding:6px 10px;border:1px solid #253042;border-radius:999px;background:#0b1220}
+    .panel{background:#0b1220;border:1px solid #253042;border-radius:12px;padding:10px}
+    .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+    .score{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    svg{max-width:100%}
+    .silhouette{width:320px;height:520px;border:1px solid #253042;border-radius:14px;background:#0b1220;position:relative;overflow:hidden}
+    .drop{position:absolute;border:2px dashed #334155;border-radius:10px}
+    .badge{position:absolute;background:#093019;border:1px solid #14532d;padding:4px 6px;border-radius:8px;font-size:12px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Y4 Science Interactive — Human Skeleton</h1>
+    <div class="sub">Find your bones • Build a skeleton • Functions of skeleton • Measure & compare · Values: Amanah (trust), gratitude, eco‑nutrition</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="find">1) Find Your Bones (Label)</button>
+      <button class="tab" data-tab="build">2) Build a Skeleton (Assemble)</button>
+      <button class="tab" data-tab="func">3) Skeleton Functions Game</button>
+      <button class="tab" data-tab="measure">4) Measure & Compare</button>
+      <button class="tab" data-tab="quiz">5) Quick Check & Reflection</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card" id="main">
+      <h2 style="margin:0 0 8px">Activity Panel</h2>
+      <div id="view"></div>
+    </section>
+
+    <aside class="card">
+      <h3 style="margin:0 0 8px">Teacher Prompts & Value Links</h3>
+      <div class="panel">
+        <ul class="muted" style="margin-left:18px">
+          <li>Start with salam & short dua for knowledge. Show frog skeleton → connect to humans.</li>
+          <li>Key bones: skull, jaw, rib cage, spine, hips, arm bones, leg bones.</li>
+          <li><b>Amanah:</b> Our body is a trust from Allah — eat well, exercise, avoid harm.</li>
+          <li><b>Eco link:</b> Strong bones need wholesome food from nature; avoid food waste.</li>
+        </ul>
+      </div>
+      <div class="result score"><div class="panel">Score<br><b id="score">0</b></div><div class="panel">Attempts<br><b id="tries">0</b></div><div class="panel">Stars<br><b id="stars">★☆☆</b></div></div>
+    </aside>
+  </div>
+
+  <script>
+    const $=(s,el=document)=>el.querySelector(s); const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+    let SCORE=0, TRIES=0; const add=(n)=>{SCORE+=n; TRIES++; $('#score').textContent=SCORE; $('#tries').textContent=TRIES; const star = SCORE>=20? '★★★': SCORE>=12? '★★☆': SCORE>=6? '★☆☆':'☆☆☆'; $('#stars').textContent=star; };
+    $$('.tab').forEach(t=>t.addEventListener('click',()=>{ $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const id=t.dataset.tab; if(id==='find') renderFind(); if(id==='build') renderBuild(); if(id==='func') renderFunc(); if(id==='measure') renderMeasure(); if(id==='quiz') renderQuiz(); }));
+
+    // ========= 1) FIND YOUR BONES =========
+    function renderFind(){
+      const v=$('#view'); v.innerHTML='';
+      const bones=[
+        {id:'skull', text:'Skull (head – protects brain)'},
+        {id:'jaw', text:'Jaw (chewing, talking)'},
+        {id:'ribs', text:'Rib Cage (protects heart & lungs)'},
+        {id:'spine', text:'Spine (backbone – support & nerves)'},
+        {id:'hips', text:'Hips/Pelvis (supports body, connects legs)'},
+        {id:'arm', text:'Arm Bones (humerus/radius/ulna)'},
+        {id:'leg', text:'Leg Bones (femur/tibia/fibula)'}
+      ];
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="two">
+          <div>
+            <div class="muted">Drag each label onto the correct spot</div>
+            <div class="silhouette" id="body">
+              <div class="badge" style="left:10px;top:10px">Less able: turn on hints</div>
+              <div class="drop" data-id="skull" style="left:110px;top:40px;width:100px;height:70px"></div>
+              <div class="drop" data-id="jaw" style="left:125px;top:105px;width:80px;height:40px"></div>
+              <div class="drop" data-id="ribs" style="left:95px;top:160px;width:130px;height:90px"></div>
+              <div class="drop" data-id="spine" style="left:145px;top:155px;width:30px;height:160px"></div>
+              <div class="drop" data-id="hips" style="left:105px;top:260px;width:120px;height:60px"></div>
+              <div class="drop" data-id="arm" style="left:40px;top:170px;width:60px;height:160px"></div>
+              <div class="drop" data-id="leg" style="left:120px;top:330px;width:80px;height:160px"></div>
+            </div>
+          </div>
+          <div>
+            <div id="bar"></div>
+            <div class="row" style="margin-top:8px"><button id="check" class="primary">Check Labels</button> <button id="hint" class="warn">Hint</button> <button id="reset">Reset</button></div>
+            <div class="result" id="out"></div>
+            <div class="panel muted">Prompt: “Why do we need bones?” → shape, protection, movement. Give thanks: <i>Alhamdulillah</i> for a healthy body.</div>
+          </div>
+        </div>
+      `; v.appendChild(ui);
+      // labels
+      const bar=$('#bar'); bones.forEach(b=>{ const el=document.createElement('div'); el.className='chip'; el.textContent=b.text; el.draggable=true; el.dataset.id=b.id; el.id='lab_'+b.id; el.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',el.id)); bar.appendChild(el); });
+      $$('.drop').forEach(slot=>{ slot.addEventListener('dragover',e=>{e.preventDefault(); slot.style.outline='2px solid var(--ok)'}); slot.addEventListener('dragleave',()=>slot.style.outline='none'); slot.addEventListener('drop',e=>{e.preventDefault(); slot.style.outline='none'; const id=e.dataTransfer.getData('text/plain'); const chip=document.getElementById(id); if(chip){ slot.innerHTML=''; slot.appendChild(chip); } }); });
+      $('#check').onclick=()=>{ let ok=true; const wrong=[]; $$('.drop').forEach(s=>{ const child=[...s.children].find(c=>c.classList && c.classList.contains('chip')); if(!child || child.dataset.id!==s.dataset.id){ ok=false; wrong.push(s.dataset.id); } }); if(ok){ add(5); $('#out').innerHTML='<span class="ok">Excellent labeling!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Fix these:</span> '+wrong.join(', '); } };
+      $('#hint').onclick=()=>{ $$('.drop').forEach(s=>{ s.style.outline='2px dashed #22c55e'; const tag=document.createElement('div'); tag.className='badge'; tag.textContent=s.dataset.id.toUpperCase(); tag.style.left='6px'; tag.style.top='6px'; s.appendChild(tag); setTimeout(()=>{ if(tag.parentNode) tag.parentNode.removeChild(tag); s.style.outline='none'; },1800); }); };
+      $('#reset').onclick=()=>renderFind();
+    }
+
+    // ========= 2) BUILD A SKELETON =========
+    function renderBuild(){
+      const v=$('#view'); v.innerHTML='';
+      const parts=[
+        {id:'skull', text:'Skull'},
+        {id:'jaw', text:'Jaw'},
+        {id:'ribs', text:'Rib Cage'},
+        {id:'spine', text:'Spine'},
+        {id:'hips', text:'Hips/Pelvis'},
+        {id:'armL', text:'Left Arm Bones'},
+        {id:'armR', text:'Right Arm Bones'},
+        {id:'legL', text:'Left Leg Bones'},
+        {id:'legR', text:'Right Leg Bones'}
+      ];
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="two">
+          <div>
+            <div class="muted">Drag pieces onto the silhouette</div>
+            <div class="silhouette" id="sil">
+              <div class="drop" data-id="skull" style="left:110px;top:40px;width:100px;height:70px"></div>
+              <div class="drop" data-id="jaw" style="left:125px;top:105px;width:80px;height:40px"></div>
+              <div class="drop" data-id="ribs" style="left:95px;top:160px;width:130px;height:90px"></div>
+              <div class="drop" data-id="spine" style="left:145px;top:155px;width:30px;height:160px"></div>
+              <div class="drop" data-id="hips" style="left:105px;top:260px;width:120px;height:60px"></div>
+              <div class="drop" data-id="armL" style="left:40px;top:170px;width:60px;height:160px"></div>
+              <div class="drop" data-id="armR" style="left:230px;top:170px;width:60px;height:160px"></div>
+              <div class="drop" data-id="legL" style="left:80px;top:330px;width:80px;height:160px"></div>
+              <div class="drop" data-id="legR" style="left:180px;top:330px;width:80px;height:160px"></div>
+            </div>
+          </div>
+          <div>
+            <div id="bin" class="panel"></div>
+            <div class="row" style="margin-top:8px"><button id="check" class="primary">Check Model</button> <button id="reset">Reset</button></div>
+            <div class="result" id="out"></div>
+            <div class="panel muted">Challenge: add <b>clavicle</b>, <b>pelvis</b>, <b>femur</b>, <b>humerus</b> labels for more able learners.</div>
+          </div>
+        </div>
+      `; v.appendChild(ui);
+      const bin=$('#bin'); parts.sort(()=>0.5-Math.random()).forEach(p=>{ const el=document.createElement('div'); el.className='chip'; el.textContent=p.text; el.draggable=true; el.dataset.id=p.id; el.id='piece_'+p.id; el.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',el.id)); bin.appendChild(el); });
+      $$('.drop').forEach(slot=>{ slot.addEventListener('dragover',e=>{e.preventDefault(); slot.style.outline='2px solid var(--ok)'}); slot.addEventListener('dragleave',()=>slot.style.outline='none'); slot.addEventListener('drop',e=>{e.preventDefault(); slot.style.outline='none'; const id=e.dataTransfer.getData('text/plain'); const chip=document.getElementById(id); if(chip){ slot.innerHTML=''; slot.appendChild(chip); } }); });
+      $('#check').onclick=()=>{ let ok=true; const wrong=[]; $$('.drop').forEach(s=>{ const child=[...s.children].find(c=>c.classList && c.classList.contains('chip')); if(!child || child.dataset.id!==s.dataset.id){ ok=false; wrong.push(s.dataset.id); } }); if(ok){ add(5); $('#out').innerHTML='<span class="ok">Model assembled correctly!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Reposition:</span> '+wrong.join(', '); } };
+      $('#reset').onclick=()=>renderBuild();
+    }
+
+    // ========= 3) FUNCTIONS GAME =========
+    function renderFunc(){
+      const v=$('#view'); v.innerHTML='';
+      const targets=[
+        {id:'protect', name:'Protection (protects organs)'},
+        {id:'support', name:'Support (gives shape)'},
+        {id:'move', name:'Movement (with muscles & joints)'},
+        {id:'grow', name:'Growth (bones grow as we grow)'}
+      ];
+      const cards=[
+        {txt:'Skull defends the brain in accidents.', cat:'protect'},
+        {txt:'Rib cage guards heart and lungs.', cat:'protect'},
+        {txt:'Spine keeps body upright.', cat:'support'},
+        {txt:'Hips help you stand and carry weight.', cat:'support'},
+        {txt:'Arm & leg bones move with muscles.', cat:'move'},
+        {txt:'Long bones lengthen from growth plates.', cat:'grow'},
+        {txt:'Different heights show unique growth.', cat:'grow'}
+      ];
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="row"><button id="regen" class="primary">New Cards</button> <button id="check" class="primary">Check Sorting</button> <button id="hint" class="warn">Hint</button></div>
+        <div class="two" style="margin-top:8px">
+          <div class="panel" id="cards"></div>
+          <div class="two">
+            ${targets.map(t=>`<div><div class="muted">${t.name}</div><div class="slot" id="t_${t.id}" data-id="${t.id}"></div></div>`).join('')}
+          </div>
+        </div>
+        <div class="result" id="out"></div>
+        <div class="panel muted">Discussion: “If we had no bones, what would happen?” “Why are bones different shapes?” Values: gratitude to Allah; eco‑nutrition for strong bones.</div>
+      `; v.appendChild(ui);
+      const draw=()=>{ const C=$('#cards'); C.innerHTML=''; cards.sort(()=>0.5-Math.random()).forEach((c,i)=>{ const el=document.createElement('div'); el.className='chip'; el.textContent=c.txt; el.draggable=true; el.dataset.cat=c.cat; el.id='f_'+i; el.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',el.id)); C.appendChild(el); }); };
+      const drop=(el)=>{ el.addEventListener('dragover',e=>{e.preventDefault(); el.style.outline='2px solid var(--ok)'}); el.addEventListener('dragleave',()=>el.style.outline='none'); el.addEventListener('drop',e=>{e.preventDefault(); el.style.outline='none'; const id=e.dataTransfer.getData('text/plain'); const chip=document.getElementById(id); if(chip) el.appendChild(chip); }); };
+      targets.forEach(t=>drop($('#t_'+t.id)));
+      $('#regen').onclick=draw; draw();
+      $('#hint').onclick=()=>{ $('#out').innerHTML='4 functions: <b>Protection, Support, Movement, Growth</b>. Match each card to the best function.' };
+      $('#check').onclick=()=>{ let ok=true, errs=[]; targets.forEach(t=>{ $$('#t_'+t.id+' .chip').forEach(c=>{ if(c.dataset.cat!==t.id){ ok=false; errs.push('“'+c.textContent+'”'); } }); }); if(ok){ add(5); $('#out').innerHTML='<span class="ok">Perfect match!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Misplaced:</span> '+errs.join(' · '); } };
+    }
+
+    // ========= 4) MEASURE & COMPARE =========
+    function renderMeasure(){
+      const v=$('#view'); v.innerHTML='';
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div class="two">
+          <div>
+            <div class="muted">Enter your pair measurements (you & partner)</div>
+            <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+              <div class="panel"><b>Your height (cm)</b><input id="h1" type="number" min="50" max="220"/></div>
+              <div class="panel"><b>Partner height (cm)</b><input id="h2" type="number" min="50" max="220"/></div>
+              <div class="panel"><b>Your arm length (cm)</b><input id="a1" type="number" min="20" max="120"/></div>
+              <div class="panel"><b>Partner arm length (cm)</b><input id="a2" type="number" min="20" max="120"/></div>
+            </div>
+            <div class="row" style="margin-top:8px"><button id="analyze" class="primary">Analyze</button> <button id="clear" class="warn">Clear</button></div>
+            <div class="result" id="out"></div>
+          </div>
+          <div>
+            <canvas id="chart" width="520" height="320" style="background:#0b1220;border:1px solid #253042;border-radius:12px"></canvas>
+            <div class="panel muted" style="margin-top:8px">Questions: “Whose arm is longer?” “Do taller people always have longer arms?” “What does this say about growth?”</div>
+          </div>
+        </div>
+      `; v.appendChild(ui);
+      const ctx=$('#chart').getContext('2d');
+      function draw(points){ const w=ctx.canvas.width, h=ctx.canvas.height; ctx.clearRect(0,0,w,h); // axes
+        const pad=40; ctx.strokeStyle='#334155'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,10); ctx.lineTo(pad,h-pad); ctx.lineTo(w-10,h-pad); ctx.stroke(); ctx.fillStyle='#94a3b8'; ctx.font='12px system-ui'; ctx.fillText('Height (cm)', w/2-30, h-10); ctx.save(); ctx.translate(12, h/2+30); ctx.rotate(-Math.PI/2); ctx.fillText('Arm length (cm)', 0,0); ctx.restore();
+        if(!points.length) return; const xs=points.map(p=>p.x), ys=points.map(p=>p.y);
+        const xmin=Math.min(...xs), xmax=Math.max(...xs), ymin=Math.min(...ys), ymax=Math.max(...ys);
+        function sx(x){ return pad + (x-xmin)/(xmax-xmin||1) * (w-pad-50); }
+        function sy(y){ return h-pad - (y-ymin)/(ymax-ymin||1) * (h-pad-30); }
+        ctx.fillStyle='#22c55e'; points.forEach((p,i)=>{ ctx.beginPath(); ctx.arc(sx(p.x), sy(p.y), 5, 0, Math.PI*2); ctx.fill(); ctx.fillText(p.label, sx(p.x)+6, sy(p.y)-6); });
+      }
+      $('#analyze').onclick=()=>{ const h1=Number($('#h1').value), h2=Number($('#h2').value), a1=Number($('#a1').value), a2=Number($('#a2').value); if([h1,h2,a1,a2].some(x=>!x)){ $('#out').innerHTML='<span class="err">Fill all four measurements.</span>'; return; }
+        const pts=[{x:h1,y:a1,label:'You'},{x:h2,y:a2,label:'Partner'}]; draw(pts); let msg=`You: ${a1} cm arm, Partner: ${a2} cm arm.`; msg += (a1>a2)? ' Your arm is longer.' : (a1<a2)? ' Partner arm is longer.' : ' Same length arms!'; msg += ' Taller ≠ always longer arms — bodies grow uniquely.'; add(3); $('#out').innerHTML='<span class="ok">Plotted.</span> '+msg; };
+      $('#clear').onclick=()=>{ draw([]); $('#h1').value=$('#h2').value=$('#a1').value=$('#a2').value=''; $('#out').textContent=''; };
+      draw([]);
+    }
+
+    // ========= 5) QUIZ & REFLECTION =========
+    function renderQuiz(){
+      const v=$('#view'); v.innerHTML='';
+      const qs=[
+        {q:'Name one bone that protects organs.', a:'skull', explain:'Skull protects brain; ribs protect heart & lungs.'},
+        {q:'Which function gives the body its shape? (support/protection/movement/growth)', a:'support', explain:'Bones support the body.'},
+        {q:'Bones + muscles + joints produce _______.', a:'movement', explain:'They work together to move.'},
+        {q:'Do bones grow as we grow? (yes/no)', a:'yes', explain:'Growth plates allow bones to lengthen.'},
+        {q:'Amanah: one way to care for your bones is …', a:'milk', explain:'Any valid: healthy food, calcium, vitamin D, exercise, avoid harm.'}
+      ]; let i=0, ok=0;
+      const ui=document.createElement('div');
+      ui.innerHTML=`
+        <div id="q" style="font-size:22px;margin-bottom:8px"></div>
+        <div class="row"><input id="a" placeholder="Type answer"/> <button id="next" class="primary">Submit</button></div>
+        <div class="result" id="out"></div>
+        <div class="panel muted">Reflection: “How can we show thankfulness to Allah for strong bones?” “How does protecting nature protect our health?”</div>
+      `; v.appendChild(ui);
+      const norm=s=>String(s).toLowerCase().replace(/\s+/g,' ').trim();
+      function show(){ $('#q').textContent='Q'+(i+1)+'. '+qs[i].q; $('#a').value=''; $('#out').textContent=''; $('#a').focus(); }
+      $('#next').onclick=()=>{ const want=qs[i].a; const got=norm($('#a').value); const correct = got.includes(norm(want)) || (want==='milk' && got.length>0); if(correct){ ok++; add(2); $('#out').innerHTML='<span class="ok">Correct.</span> '+(qs[i].explain||''); } else { add(0); $('#out').innerHTML='<span class="err">Sample answer:</span> <b>'+want+'</b><br><span class="muted">'+(qs[i].explain||'')+'</span>'; } i++; if(i<qs.length){ setTimeout(show,700);} else { $('#q').innerHTML='Finished. Score: '+ok+'/'+qs.length; $('#a').disabled=true; $('#next').disabled=true; } };
+      show();
+    }
+
+    // boot
+    renderFind();
+  </script>
+</body>
+</html>
