@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Y4 Science — Muscles & Bones Interactive</title>
+<style>
+  :root{--bg:#0f172a;--panel:#0b1220;--card:#111827;--muted:#9aa4b2;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;--blue:#60a5fa}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial;background:var(--bg);color:#e5e7eb}
+  header{position:sticky;top:0;background:var(--panel);border-bottom:1px solid #1f2937;padding:16px;z-index:10}
+  h1{margin:0;font-size:20px}
+  .sub{color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+  .tab{background:var(--panel);border:1px solid #243042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+  .tab.active{border-color:var(--ok);box-shadow:0 0 0 2px #14532d inset}
+  .wrap{max-width:1180px;margin:16px auto;padding:0 16px;display:grid;gap:16px}
+  @media(min-width:1100px){.wrap{grid-template-columns:1.45fr .55fr}}
+  .card{background:var(--card);border:1px solid #1f2937;border-radius:16px;padding:16px}
+  .panel{background:#0b1220;border:1px solid #253042;border-radius:12px;padding:10px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .result{margin-top:10px;padding:10px;border-radius:10px;background:var(--panel);border:1px solid #1f2937}
+  .muted{color:var(--muted)} .ok{color:var(--ok)} .err{color:var(--err)}
+  button{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px 12px;cursor:pointer}
+  button.primary{background:linear-gradient(135deg,#16a34a,#22c55e);border:none;color:#06210d}
+  button.warn{background:#1f1300;border:1px solid #6b4e00;color:#ffd166}
+  input,select,textarea{background:var(--panel);border:1px solid #253042;border-radius:10px;color:#e5e7eb;padding:10px}
+  .stage{min-height:320px;display:flex;align-items:center;justify-content:center;background:#0b1220;border:1px solid #253042;border-radius:14px;padding:12px}
+  .grid{display:grid;gap:10px}
+  .grid-2{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:repeat(3,1fr)}
+  .grid-4{grid-template-columns:repeat(4,1fr)}
+  .tile{background:#0f1a2a;border:1px solid #263246;border-radius:12px;padding:12px;text-align:center;cursor:pointer}
+  .tile.sel{outline:3px solid #22c55e}
+  .drop{min-height:84px;border:2px dashed #334155;border-radius:12px;padding:8px;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;justify-content:center;padding:8px 12px;border:1px solid #2a3646;border-radius:999px;background:#0b1220;margin:6px;cursor:grab}
+  .badge{font-size:12px;padding:2px 6px;border:1px solid #2a3646;border-radius:999px}
+  .tiny{font-size:12px;color:#9aa4b2}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+</style>
+</head>
+<body>
+  <header>
+    <h1>Y4 Science — Muscles & Bones Interactive</h1>
+    <div class="sub">Antagonistic pairs • Contraction & relaxation • Interpreting bar charts • Islamic & eco links</div>
+    <div class="tabs">
+      <button class="tab active" data-tab="lead">0) 💪 Lead‑in</button>
+      <button class="tab" data-tab="sim">1) 🦴 Elbow Simulator</button>
+      <button class="tab" data-tab="label">2) 🏷️ Label the Arm</button>
+      <button class="tab" data-tab="resist">3) 🧠 Resistance & Feel</button>
+      <button class="tab" data-tab="chart">4) 📊 Read a Bar Chart</button>
+      <button class="tab" data-tab="quiz">5) 🧩 Quick Quiz</button>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <section class="card" id="main">
+      <h2 style="margin:0 0 8px">Activity Panel</h2>
+      <div id="view"></div>
+    </section>
+
+    <aside class="card">
+      <h3 style="margin:0 0 8px">Teacher Prompts & Values</h3>
+      <div class="panel">
+        <ul class="muted" style="margin-left:18px">
+          <li>Lead Qs: Why can't bones move alone? Which muscle contracts to bend the arm?</li>
+          <li>Key idea: <b>Muscles work in pairs</b> (biceps/triceps). One contracts, the other relaxes.</li>
+          <li>Islamic: Our bodies are an <b>amanah</b>; care with healthy food, rest & exercise.</li>
+          <li>Eco: Animals also depend on muscles to move; protect habitats so they thrive.</li>
+          <li>Differentiate: fewer choices for less‑able; add extension prompts for more‑able.</li>
+        </ul>
+      </div>
+      <div class="result panel">Score: <b id="score">0</b> · Tries: <b id="tries">0</b> · Stars: <b id="stars">☆☆☆</b></div>
+    </aside>
+  </div>
+
+<script>
+const $=(s,el=document)=>el.querySelector(s); const $$=(s,el=document)=>[...el.querySelectorAll(s)];
+let SCORE=0, TRIES=0; function add(n){SCORE+=n; TRIES++; $('#score').textContent=SCORE; $('#tries').textContent=TRIES; $('#stars').textContent= SCORE>=36?'★★★':SCORE>=20?'★★☆':SCORE>=10?'★☆☆':'☆☆☆';}
+$$('.tab').forEach(t=>t.addEventListener('click',()=>{ $$('.tab').forEach(x=>x.classList.remove('active')); t.classList.add('active'); const id=t.dataset.tab; ({lead:renderLead,sim:renderSim,label:renderLabel,resist:renderResist,chart:renderChart,quiz:renderQuiz}[id])(); }));
+
+function renderLead(){ const v=$('#view'); v.innerHTML=`
+  <div class="stage"><div>
+    <p class="muted">Ask pupils:</p>
+    <ul>
+      <li>How do bones move if they are hard? (Answer: muscles pull on them.)</li>
+      <li>What happens to the upper‑arm muscle when you bend your elbow?</li>
+      <li>Why did Allah create muscles in <b>pairs</b>?</li>
+    </ul>
+    <div class="result">Use the tabs: <b>Elbow Simulator → Label → Resistance → Bar Chart → Quiz</b></div>
+  </div></div>`; }
+
+// 1) Elbow Simulator — slider controls angle; biceps/triceps change length/width
+function renderSim(){ const v=$('#view'); v.innerHTML=`
+  <div class="row"><label>Elbow angle: <span id="angVal" class="mono">90°</span></label><input id="ang" type="range" min="20" max="170" value="90" step="1" style="width:320px"> <button class="primary" id="check">Check Understanding</button></div>
+  <div class="stage"><svg id="arm" viewBox="0 0 420 260" aria-label="elbow simulator">
+    <!-- upper arm bone (humerus) -->
+    <rect x="70" y="80" width="140" height="16" fill="#cbd5e1" rx="8"/>
+    <!-- forearm bone (radius/ulna as single block) rotates around elbow at (210,88) -->
+    <g id="fore" transform="translate(210,88) rotate(0)">
+      <rect x="0" y="-8" width="170" height="16" fill="#e2e8f0" rx="8"/>
+      <circle cx="170" cy="0" r="12" fill="#94a3b8"/>
+    </g>
+    <!-- elbow joint -->
+    <circle cx="210" cy="88" r="10" fill="#94a3b8"/>
+    <!-- biceps (front, attaches upper arm to forearm) -->
+    <rect id="biceps" x="110" y="55" width="80" height="18" fill="#ef4444" rx="9"/>
+    <line id="b1" x1="190" y1="64" x2="210" y2="88" stroke="#ef4444" stroke-width="6"/>
+    <!-- triceps (back) -->
+    <rect id="triceps" x="110" y="105" width="80" height="18" fill="#22c55e" rx="9"/>
+    <line id="t1" x1="190" y1="114" x2="210" y2="88" stroke="#22c55e" stroke-width="6"/>
+    <text x="110" y="48" font-size="12" fill="#9aa4b2">Biceps (front)</text>
+    <text x="110" y="140" font-size="12" fill="#9aa4b2">Triceps (back)</text>
+  </svg></div>
+  <div class="panel tiny">Rule: <b>Flex</b> elbow → biceps <b>contracts</b> (shortens & bulges), triceps <b>relaxes</b>. <b>Extend</b> elbow → triceps contracts, biceps relaxes.</div>
+  <div class="result" id="simOut"></div>`;
+  const ang=$('#ang'), angVal=$('#angVal'); function update(){ const a=parseInt(ang.value,10); angVal.textContent=a+'°'; const rot=180-a; // 20→160 rot, 170→10 rot
+    $('#fore').setAttribute('transform',`translate(210,88) rotate(${rot})`);
+    const flex=a<90; // flexed
+    const bW=flex?110:70, tW=flex?70:110; $('#biceps').setAttribute('width',bW); $('#triceps').setAttribute('width',tW);
+    $('#b1').setAttribute('stroke-width',flex?8:5); $('#t1').setAttribute('stroke-width',flex?5:8);
+  }
+  ang.oninput=update; update();
+  $('#check').onclick=()=>{ const a=parseInt(ang.value,10); const msg = a<90 ? 'Elbow flexed: biceps contracts, triceps relaxes.' : 'Elbow extended: triceps contracts, biceps relaxes.'; add(4); $('#simOut').innerHTML='<span class="ok">'+msg+'</span>'; };
+}
+
+// 2) Label the Arm — drag labels to zones
+function renderLabel(){ const v=$('#view'); v.innerHTML=`
+  <div class="row"><button class="primary" id="reset">Reset</button> <button class="primary" id="check">Check</button></div>
+  <div class="stage"><svg id="diagram" viewBox="0 0 420 240">
+    <rect x="40" y="96" width="120" height="16" fill="#cbd5e1" rx="8"/>
+    <rect x="200" y="96" width="160" height="16" fill="#e2e8f0" rx="8"/>
+    <circle cx="200" cy="104" r="10" fill="#94a3b8"/>
+    <rect x="80" y="70" width="80" height="16" fill="#ef4444" rx="8"/>
+    <rect x="80" y="122" width="80" height="16" fill="#22c55e" rx="8"/>
+    <g font-size="12" fill="#9aa4b2">
+      <rect id="z_biceps" x="300" y="40" width="90" height="24" rx="8" fill="#0b1220" stroke="#2a3646"/>
+      <text x="345" y="57" text-anchor="middle">biceps</text>
+      <rect id="z_triceps" x="300" y="74" width="90" height="24" rx="8" fill="#0b1220" stroke="#2a3646"/>
+      <text x="345" y="91" text-anchor="middle">triceps</text>
+      <rect id="z_humerus" x="300" y="108" width="90" height="24" rx="8" fill="#0b1220" stroke="#2a3646"/>
+      <text x="345" y="125" text-anchor="middle">humerus</text>
+      <rect id="z_forearm" x="300" y="142" width="90" height="24" rx="8" fill="#0b1220" stroke="#2a3646"/>
+      <text x="345" y="159" text-anchor="middle">forearm</text>
+      <rect id="z_elbow" x="300" y="176" width="90" height="24" rx="8" fill="#0b1220" stroke="#2a3646"/>
+      <text x="345" y="193" text-anchor="middle">elbow</text>
+    </g>
+  </svg></div>
+  <div class="panel" id="labels"></div>
+  <div class="result" id="labOut"></div>`;
+  const names=['biceps','triceps','humerus','forearm','elbow']; const host=$('#labels');
+  function chip(n){ const d=document.createElement('div'); d.className='chip'; d.id='c_'+n; d.textContent=n; d.draggable=true; d.addEventListener('dragstart',e=>e.dataTransfer.setData('text/plain',d.id)); return d; }
+  function setup(){ host.innerHTML=''; names.forEach(n=>host.appendChild(chip(n))); names.forEach(n=>{ const dz=$('#z_'+n); dz.dataset.fill=''; dz.addEventListener('dragover',e=>{e.preventDefault(); dz.setAttribute('stroke','#22c55e')}); dz.addEventListener('dragleave',()=>dz.setAttribute('stroke','#2a3646')); dz.addEventListener('drop',e=>{e.preventDefault(); dz.setAttribute('stroke','#2a3646'); const id=e.dataTransfer.getData('text/plain'); const el=document.getElementById(id); if(el){ dz.dataset.fill=id.replace('c_',''); el.style.opacity=0.25; el.draggable=false; }}); }); $('#labOut').textContent=''; }
+  setup();
+  $('#reset').onclick=setup; $('#check').onclick=()=>{ let ok=true; names.forEach(n=>{ if($('#z_'+n).dataset.fill!==n) ok=false; }); if(ok){ add(8); $('#labOut').innerHTML='<span class="ok">Excellent labelling!</span>'; } else { add(0); $('#labOut').innerHTML='<span class="err">Not yet. Drag each label to the correct zone.</span>'; }
+  };
+}
+
+// 3) Resistance & Feel — choose descriptions for flex/extend & reflection
+function renderResist(){ const v=$('#view'); v.innerHTML=`
+  <div class="panel tiny">Try this safely: press your palms together for 5 seconds → relax. Notice: muscles feel <b>firm</b> when working and <b>softer</b> when resting.</div>
+  <div class="row"><button class="primary" id="check">Check Answers</button></div>
+  <div class="grid grid-2" style="margin-top:8px">
+    <div class="panel">
+      <div class="badge">Elbow <b>flex</b> (arm up)</div>
+      <div class="grid grid-3" id="flexBox"></div>
+    </div>
+    <div class="panel">
+      <div class="badge">Elbow <b>extend</b> (arm down)</div>
+      <div class="grid grid-3" id="extBox"></div>
+    </div>
+  </div>
+  <div class="panel" style="margin-top:8px">
+    <label>Reflection (Islamic & Eco link)</label>
+    <textarea id="ref" rows="3" placeholder="How does caring for our body (amanah) and animal habitats relate to muscles working well?"></textarea>
+  </div>
+  <div class="result" id="resOut"></div>`;
+  const options=[
+    {t:'Biceps contracts (shorter & firm)', flex:'flex'},
+    {t:'Triceps relaxes (longer & softer)', flex:'flex'},
+    {t:'Triceps contracts (shorter & firm)', flex:'ext'},
+    {t:'Biceps relaxes (longer & softer)', flex:'ext'},
+    {t:'Bones move at elbow joint', flex:'both'},
+    {t:'Muscles pull, not push', flex:'both'}
+  ];
+  function make(box,type){ options.forEach(o=>{ if(o.flex===type || o.flex==='both'){ const d=document.createElement('div'); d.className='tile'; d.textContent=o.t; d.dataset.ok='true'; d.onclick=()=>d.classList.toggle('sel'); box.appendChild(d); } else { const d=document.createElement('div'); d.className='tile'; d.textContent=o.t; d.dataset.ok='false'; d.onclick=()=>d.classList.toggle('sel'); box.appendChild(d); } }); }
+  make($('#flexBox'),'flex'); make($('#extBox'),'ext');
+  $('#check').onclick=()=>{ let ok=true; ['flexBox','extBox'].forEach(id=>{ $$('#'+id+' .tile').forEach(t=>{ const should=t.dataset.ok==='true'; const picked=t.classList.contains('sel'); if(should!==picked) ok=false; }); }); if(ok){ add(8); $('#resOut').innerHTML='<span class="ok">Great observations — muscles become firm when working!</span>'; } else { add(0); $('#resOut').innerHTML='<span class="err">Recheck which statements fit flex vs extend.</span>'; }
+  };
+}
+
+// 4) Bar Chart — generate simple data & ask questions
+function renderChart(){ const v=$('#view'); v.innerHTML='';
+  const ui=document.createElement('div'); ui.innerHTML=`
+    <div class="row"><button class="primary" id="regen">New Data</button> <button class="primary" id="check">Check</button></div>
+    <div class="stage"><canvas id="cv" width="520" height="260" style="max-width:100%;background:#0b1220;border:1px solid #253042;border-radius:12px"></canvas></div>
+    <div class="panel tiny">Example context: Weekly minutes of <b>healthy movement</b> (Mon–Fri). Reading charts helps us care for our amanah (health) and make eco‑friendly choices (e.g., walking).</div>
+    <div class="grid grid-2" style="margin-top:8px">
+      <div class="panel">
+        <div class="badge">Questions</div>
+        <ol id="qs" style="padding-left:18px"></ol>
+      </div>
+      <div class="panel">
+        <div class="badge">Answers</div>
+        <div class="grid">
+          <label>1) Day with <b>highest</b> minutes? <input id="a1" placeholder="e.g., Wed"></label>
+          <label>2) Day with <b>lowest</b> minutes? <input id="a2" placeholder="e.g., Mon"></label>
+          <label>3) Minutes on <b>Thu</b>? <input id="a3" placeholder="number"></label>
+          <label>4) Difference between highest & lowest? <input id="a4" placeholder="number"></label>
+        </div>
+      </div>
+    </div>
+    <div class="result" id="chartOut"></div>`; v.appendChild(ui);
+  const days=['Mon','Tue','Wed','Thu','Fri']; let data=[];
+  function gen(){ data=days.map(()=>10+Math.floor(Math.random()*41)); draw(); $('#qs').innerHTML='<li>Read the chart title & axes.</li><li>Compare bar heights to find highest & lowest.</li><li>Read exact value for Thu.</li><li>Compute a difference.</li>'; $('#chartOut').textContent=''; ['a1','a2','a3','a4'].forEach(id=>$('#'+id).value=''); }
+  function draw(){ const c=$('#cv'), ctx=c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); // axes
+    ctx.strokeStyle='#334155'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(50,20); ctx.lineTo(50,220); ctx.lineTo(500,220); ctx.stroke();
+    ctx.fillStyle='#9aa4b2'; ctx.font='12px system-ui'; ctx.fillText('Minutes of Movement', 160, 16);
+    let max=Math.max(...data); const scale=180/max; days.forEach((d,i)=>{ const x=80+i*80; const h=data[i]*scale; ctx.fillStyle='#1f2937'; ctx.fillRect(x,220-h,40,h); ctx.fillStyle='#60a5fa'; ctx.fillRect(x+3,220-h+3,34,h-6); ctx.fillStyle='#9aa4b2'; ctx.fillText(d,x+8,235); ctx.fillText(data[i],x+8,220-h-6); }); }
+  $('#regen').onclick=gen; gen();
+  $('#check').onclick=()=>{ const maxV=Math.max(...data), minV=Math.min(...data); const d1=days[data.indexOf(maxV)], d2=days[data.indexOf(minV)]; const ok1=$('#a1').value.trim().toLowerCase()===d1.toLowerCase(); const ok2=$('#a2').value.trim().toLowerCase()===d2.toLowerCase(); const ok3=parseInt($('#a3').value,10)===data[3]; const ok4=parseInt($('#a4').value,10)===(maxV-minV); const all=ok1&&ok2&&ok3&&ok4; if(all){ add(10); $('#chartOut').innerHTML='<span class="ok">Chart skills on point!</span>'; } else { add(0); $('#chartOut').innerHTML='<span class="err">Check your answers — look carefully at bar heights & labels.</span>'; }
+  };
+}
+
+// 5) Quick Quiz — 8 items
+function renderQuiz(){ const v=$('#view'); v.innerHTML='';
+  const ui=document.createElement('div'); ui.innerHTML=`
+    <div class="row"><button class="primary" id="newQ">New 8‑Q Set</button> <button class="primary" id="checkQ">Check</button> <button class="warn" id="hint">Hints</button></div>
+    <div id="qs" style="margin-top:8px"></div>
+    <div id="out" class="result"></div>`; v.appendChild(ui);
+  const bank=[
+    {t:'Bones can move by themselves.', a:'F'},
+    {t:'Biceps and triceps are an antagonistic pair.', a:'T'},
+    {t:'When the elbow bends, the biceps relaxes.', a:'F'},
+    {t:'Muscles pull on bones to cause movement.', a:'T'},
+    {t:'Bar charts help compare data quickly.', a:'T'},
+    {t:'Caring for our body is part of amanah.', a:'T'},
+    {t:'Animals do not need muscles to move.', a:'F'},
+    {t:'When the elbow straightens, triceps contracts.', a:'T'}
+  ];
+  let set=[]; function gen(){ set=[...bank].sort(()=>Math.random()-0.5).slice(0,8); draw(); $('#out').textContent=''; }
+  function draw(){ const host=$('#qs'); host.innerHTML=''; set.forEach((q,i)=>{ host.innerHTML+=`<div class="panel" style="margin-bottom:8px"><div><span class="badge">Q${i+1}</span> ${q.t}</div>
+    <div class="row"><label><input type="radio" name="q${i}" value="T"> True</label> <label><input type="radio" name="q${i}" value="F"> False</label></div></div>`; }); }
+  gen();
+  $('#newQ').onclick=gen; $('#hint').onclick=()=>$('#out').innerHTML='Hints: pairs = one contracts, other relaxes; charts: read title, axes, compare heights.';
+  $('#checkQ').onclick=()=>{ let ok=0; set.forEach((q,i)=>{ const pick=($$("input[name='q"+i+"']:checked")[0]||{}).value; if(pick===q.a) ok++;}); if(ok===set.length){ add(10); $('#out').innerHTML='<span class="ok">Super work — full marks!</span>'; } else { add(0); $('#out').innerHTML='<span class="err">Correct:</span> '+ok+' / '+set.length+' — Review muscles & charts.'; }
+  };
+}
+
+// boot
+renderLead();
+</script>
+</body>
+</html>
